@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>免費 AI 圖像生成器</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f0f4f8; }
+    textarea { width: 100%; height: 80px; padding: 0.5rem; font-size: 1rem; }
+    button { padding: 0.5rem 1rem; margin-top: 1rem; font-size: 1rem; cursor: pointer; }
+    #output img { max-width: 100%; margin-top: 1rem; border: 2px solid #ccc; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <h1>免費 AI 圖像生成器</h1>
+  <p>請輸入想要生成的圖像描述詞（prompt）：</p>
+  <textarea id="prompt" placeholder="例如：在东京街道上的動漫小女生"></textarea>
+  <br>
+  <button onclick="generateImage()">生成圖像</button>
+  <div id="output"></div>
+
+  <script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.5.1';
+
+    // 加載 stable-diffusion 模型 (Xenova 网站提供)
+    const pipe = await pipeline('text-to-image', 'Xenova/stable-diffusion');
+
+    window.generateImage = async () => {
+      const prompt = document.getElementById('prompt').value;
+      if (!prompt.trim()) {
+        alert('請先輸入描述詞。');
+        return;
+      }
+      document.getElementById('output').innerHTML = '生成中…請稍後';
+
+      const result = await pipe(prompt);
+      const img = document.createElement('img');
+      img.src = result.image.toDataURL();
+
+      document.getElementById('output').innerHTML = '';
+      document.getElementById('output').appendChild(img);
+    };
+  </script>
+</body>
+</html>
