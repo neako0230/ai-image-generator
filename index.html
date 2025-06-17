@@ -9,36 +9,71 @@
     textarea { width: 100%; height: 80px; padding: 0.5rem; font-size: 1rem; }
     button { padding: 0.5rem 1rem; margin-top: 1rem; font-size: 1rem; cursor: pointer; }
     #output img { max-width: 100%; margin-top: 1rem; border: 2px solid #ccc; border-radius: 10px; }
+    #loading { color: #333; font-style: italic; margin-top: 1rem; }
   </style>
 </head>
 <body>
   <h1>免費 AI 圖像生成器</h1>
   <p>請輸入想要生成的圖像描述詞（prompt）：</p>
-  <textarea id="prompt" placeholder="例如：在东京街道上的動漫小女生"></textarea>
+  <textarea id="prompt" placeholder="例如：巨大的狼和小男孩一起走路"></textarea>
   <br>
-  <button onclick="generateImage()">生成圖像</button>
+  <button onclick="generateImage()">生成圖片</button>
+  <div id="loading"></div>
   <div id="output"></div>
 
   <script type="module">
+    const loading = document.getElementById('loading');
+    const output = document.getElementById('output');
+
+    function checkWebGPUSupport() {
+      if (!navigator.gpu) {
+        loading.innerText = '⚠️ 您的瀏覽器不支援 WebGPU，請使用最新版本的 Google Chrome 或 Edge。';
+        return false;
+      }
+      return true;
+    }
+
+    if (!checkWebGPUSupport()) {
+      throw new Error('WebGPU not supported');
+    }
+
+    loading.innerText = '🔄 正在載入模型，首次使用可能需要 30-60 秒...';
+
     import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.5.1';
 
-    // 加載 stable-diffusion 模型 (Xenova 网站提供)
-    const pipe = await pipeline('text-to-image', 'Xenova/stable-diffusion');
+    let pipe;
+    pipeline('text-to-image', 'Xenova/stable-diffusion').then(p => {
+      pipe = p;
+      loading.innerText = '';
+    }).catch(e => {
+      loading.innerText = '❌ 載入模型時發生錯誤，請稍後再試。';
+      console.error(e);
+    });
 
     window.generateImage = async () => {
-      const prompt = document.getElementById('prompt').value;
-      if (!prompt.trim()) {
+      const prompt = document.getElementById('prompt').value.trim();
+      if (!prompt) {
         alert('請先輸入描述詞。');
         return;
       }
-      document.getElementById('output').innerHTML = '生成中…請稍後';
+      if (!pipe) {
+        loading.innerText = '⏳ 模型尚未載入完成，請稍候...';
+        return;
+      }
 
-      const result = await pipe(prompt);
-      const img = document.createElement('img');
-      img.src = result.image.toDataURL();
+      loading.innerText = '🧠 生成圖片中...';
+      output.innerHTML = '';
 
-      document.getElementById('output').innerHTML = '';
-      document.getElementById('output').appendChild(img);
+      try {
+        const result = await pipe(prompt);
+        const img = document.createElement('img');
+        img.src = result.image.toDataURL();
+        output.appendChild(img);
+        loading.innerText = '';
+      } catch (err) {
+        loading.innerText = '❌ 生成圖片時發生錯誤';
+        console.error(err);
+      }
     };
   </script>
 </body>
